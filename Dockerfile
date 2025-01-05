@@ -1,15 +1,31 @@
-FROM maven:latest AS build
+# Stage 1: Build the application (using Maven)
+FROM maven:3.8.8-eclipse-temurin-17 AS builder
 
+# Set working directory
 WORKDIR /app
-COPY pom.xml .
+
+# Copy only necessary files for the build
+COPY pom.xml ./
 COPY src ./src
+
+# Run Maven build
 RUN mvn clean package -DskipTests
 
-FROM openjdk:17-jdk-slim
+# Stage 2: Prepare the final runtime image
+FROM eclipse-temurin:17-jdk AS runtime
 
-WORKDIR /app
-COPY target/microservice-message-0.0.1-SNAPSHOT.jar app.jar
+ENV LANGUAGE='en_US:en'
+ENV JAVA_OPTS="-Djava.security.egd=file:/dev/./urandom -Dspring.profiles.active=prod"
 
-EXPOSE 8082
+# Create a non-root user to run the application securely
+RUN addgroup --system spring && adduser --system --ingroup spring spring
+USER spring
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Copy the built jar from the builder stage
+COPY --from=builder /app/target/*.jar /app/app.jar
+
+# Expose necessary ports
+EXPOSE 8080
+
+# Set entrypoint to run the Spring Boot application
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
