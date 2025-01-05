@@ -3,6 +3,7 @@ package com.example.journalsystem.bo.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+ 
 
 @Entity
 @Data
